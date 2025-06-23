@@ -1,13 +1,13 @@
 package common
 
+import "encoding/json"
 
 type Account struct {
-	Nonce    uint64
-	Balance  uint64
-	Codehash []byte
-	Root     []byte
+	Nonce    uint64 `json:"nonce"`
+	Balance  uint64 `json:"balance"`
+	Codehash []byte `json:"codehash"`
+	Root     []byte `json:"root"`
 }
-
 
 func NewAccount() *Account {
 	return &Account{
@@ -16,4 +16,12 @@ func NewAccount() *Account {
 		Codehash: nil,
 		Root:     nil,
 	}
+}
+
+func (a *Account) Serialize() ([]byte, error) {
+	return json.Marshal(a)
+}
+
+func (a *Account) Deserialize(jsonBytes []byte) error {
+	return json.Unmarshal(jsonBytes, a)
 }

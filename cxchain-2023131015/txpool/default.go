@@ -1,6 +1,8 @@
 package txpool
 
-import "cxchain-2023131015/common"
+import (
+	"cxchain-2023131015/common"
+)
 
 type TxPool struct {
 	pending map[common.Address][]boxes

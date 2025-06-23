@@ -7,7 +7,8 @@ import (
 type pool interface {
 	AddTransaction(tx *common.Transaction) error
 	PopTransaction() (*common.Transaction, error)
-	
+	SetStatRoot(root []byte)
+	NotifyTxEvent(txs []*common.Transaction)
 }
 
 type txbox struct {

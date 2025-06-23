@@ -66,11 +66,11 @@ func (m *MPT) Insert(key, value []byte) error {
 }
 
 func (m *MPT) Has(key []byte) ([]byte, error) {
+	nibbles := ToNibbles(key)
 	if m.Root == nil {
 		return nil, fmt.Errorf("empty trie")
 	}
-	nibbles := ToNibbles(key)
-
+	
 	value, err := m.has(m.Root, nibbles)
 	if err != nil {
 		return nil, err
