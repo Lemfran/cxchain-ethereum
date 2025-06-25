@@ -56,8 +56,7 @@ func (m *MPT) Insert(key, value []byte) error {
 		}
 		return m.Savenode(m.Root)
 	}
-	
-	newRoot, err := m.insert(m.Root, nibbles, value)
+		newRoot, err := m.insert(m.Root, nibbles, value)
 	if err != nil {
 		return err
 	}
@@ -66,14 +65,14 @@ func (m *MPT) Insert(key, value []byte) error {
 }
 
 func (m *MPT) Has(key []byte) ([]byte, error) {
-	nibbles := ToNibbles(key)
 	if m.Root == nil {
 		return nil, fmt.Errorf("empty trie")
 	}
-	
+	nibbles := ToNibbles(key)
 	value, err := m.has(m.Root, nibbles)
-	if err != nil {
-		return nil, err
+	
+	if value == nil || err != nil {
+		return nil, fmt.Errorf("key not found")
 	}
 	return value, nil
 }
@@ -270,30 +269,31 @@ func (mpt *MPT) has(node Node, nibbles []byte) ([]byte, error) {
 		}
 		// 如果查找的key长度小于叶子节点的key长度，或者key不匹配，说明key不存在
 		if len(nibbles) < len(n.Key) {
-			return nil, fmt.Errorf("key not found4")
+
+			return nil, fmt.Errorf("key not found1")
 		}
 		// 比较key的前缀
 		if !bytes.Equal(n.Key, nibbles[:len(n.Key)]) {
 
+			return nil, fmt.Errorf("key not found2")
 		}
 		// 如果查找的key长度与叶子节点的key长度不相等，说明不是完全匹配，key不存在
 		if len(nibbles) != len(n.Key) {
 
-			return nil, fmt.Errorf("key not found1")
+			return nil, fmt.Errorf("key not found3")
 		}
 		return n.Value, nil
 
 	case *ExtensionNode:
-
 		// 如果查找的key长度小于扩展节点的路径长度，或者路径不匹配，说明key不存在
 		if len(nibbles) < len(n.Key) {
 
-			return nil, fmt.Errorf("key not found2")
+			return nil, fmt.Errorf("key not found4")
 		}
 		// 比较路径前缀
 		if !bytes.Equal(n.Key, nibbles[:len(n.Key)]) {
 
-			return nil, fmt.Errorf("key not found3")
+			return nil, fmt.Errorf("key not found5")
 		}
 		child, err := mpt.Loadnode(n.Value)
 		if err != nil {
@@ -315,7 +315,7 @@ func (mpt *MPT) has(node Node, nibbles []byte) ([]byte, error) {
 			return nil, err
 		}
 		if child == nil {
-			return nil, fmt.Errorf("key not found")
+			return nil, fmt.Errorf("key not found6")
 		}
 		return mpt.has(child, nibbles[1:])
 

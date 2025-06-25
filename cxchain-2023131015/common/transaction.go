@@ -2,14 +2,12 @@ package common
 
 import (
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
-type Transaction struct {
-	txdata
-	signature
-}
-
-type txdata struct {
+type Txdata struct {
 	To       []byte
 	Value    uint64
 	Nonce    uint64
@@ -18,9 +16,14 @@ type txdata struct {
 	Input    []byte
 }
 
-type signature struct {
+type Signature struct {
 	R, S *big.Int
 	V    uint8
+}
+
+type Transaction struct {
+	Txdata 
+	Signature
 }
 
 type Transactioner interface {
@@ -30,7 +33,7 @@ type Transactioner interface {
 
 func NewTransaction(to []byte, value uint64, nonce uint64, gasLimit uint64, gasPrice uint64, input []byte) *Transaction {
 	return &Transaction{
-		txdata: txdata{
+		Txdata: Txdata{
 			To:       to,
 			Value:    value,
 			Nonce:    nonce,
@@ -38,41 +41,76 @@ func NewTransaction(to []byte, value uint64, nonce uint64, gasLimit uint64, gasP
 			GasPrice: gasPrice,
 			Input:    input,
 		},
-		signature: signature{},
+		Signature: Signature{},
 	}
 }
 
-/*func Ecrecover(hash, sig []byte) ([]byte, error) {
-	return secp256k1.RecoverPubkey(hash, sig)
-}
-
-func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
-	s, err := Ecrecover(hash, sig)
+// Sign 实现Transactioner接口的Sign方法
+func (tx *Transaction) Sign(privkey []byte) error {
+	// 将私钥转换为ECDSA格式
+	privateKey, err := crypto.ToECDSA(privkey)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	
+	// 计算交易哈希
+	hash := tx.Hash()
+	
+	// 使用私钥签名
+	signature, err := crypto.Sign(hash[:], privateKey)
+	if err != nil {
+		return err
+	}
+	
+	// 解析签名结果
+	tx.Signature.R = new(big.Int).SetBytes(signature[:32])
+	tx.Signature.S = new(big.Int).SetBytes(signature[32:64])
+	tx.Signature.V = signature[64] + 27 // 以太坊的V值调整
+	
+	return nil
+}
 
-	x, y := elliptic.Unmarshal(S256(), s)
-	return &ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil
-}*/
-
+// From 实现Transactioner接口的From方法，用于从签名恢复地址
 func (tx *Transaction) From() Address {
-	/*txdata := tx.txdata
-	toSign, _ := rlp.EncodeToBytes(txdata)
-	msg := sha3.Keccak256(toSign)
+	// 准备签名数据
 	sig := make([]byte, 65)
-	// 把RSV写进去
-	copy(sig[32-len(tx.signature.R.Bytes()):], tx.signature.R.Bytes())
-	copy(sig[64-len(tx.signature.S.Bytes()):], tx.signature.S.Bytes())
-	sig[64] = tx.signature.V
-	pubKey, err := secp256k1.RecoverPubkey(msg, sig)
+	copy(sig[:32], tx.Signature.R.Bytes())
+	copy(sig[32:64], tx.Signature.S.Bytes())
+	sig[64] = tx.Signature.V - 27 // 还原V值
+	
+	// 计算交易哈希
+	hash := tx.Hash()
+	
+	// 恢复公钥
+	pubKey, err := crypto.Ecrecover(hash[:], sig)
 	if err != nil {
-		// TODO
-		// return
+		return Address{}
 	}
-	return PubKeyToAddress(pubKey)*/
-	//暂且默认输出
-	return Address{0x01}
+	
+	// 将公钥转换为地址
+	return PubKeyToAddress(pubKey[1:]) // 去掉第一个字节(0x04)
+}
+
+// Hash 计算交易的哈希值
+func (tx *Transaction) Hash() Hash {
+	// 使用RLP编码交易数据
+	encoded, err := rlp.EncodeToBytes(tx.Txdata)
+	if err != nil {
+		return Hash{}
+	}
+	// 计算Keccak256哈希
+	// 假设Hash类型与github.com/ethereum/go-ethereum/common.Hash兼容，直接进行类型转换
+	result := crypto.Keccak256Hash(encoded)
+	return Hash(result)
+}
+
+func (tx *Transaction) Serialize() []byte {
+	// 序列化交易数据
+	data, err := rlp.EncodeToBytes(tx.Txdata)
+	if err != nil {
+		panic(err)
+	}
+	return data
 }
 
 

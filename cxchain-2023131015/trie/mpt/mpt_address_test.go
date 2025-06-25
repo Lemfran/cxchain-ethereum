@@ -3,6 +3,7 @@ package mpt
 import (
 	"bytes"
 	"cxchain-2023131015/kvstore/leveldb"
+	"fmt"
 	"testing"
 )
 
@@ -51,8 +52,17 @@ func TestMPTHasWithAddress(t *testing.T) {
 	// 测试不存在的地址
 	t.Run("NonExistAddress", func(t *testing.T) {
 		var nonExistAddr [20]byte
-		_, err := mpt.Has(nonExistAddr[:])
+		copy(nonExistAddr[:], []byte{
+	    0x32, 0x16, 0x17, 0x18, 0x19,
+	    0x1a, 0x1b, 0xdc, 0x1d, 0x1e,
+	    0x1f, 0x20, 0x21, 0x32, 0x23,
+	    0x24, 0x25, 0x26, 0x27, 0x29,
+		})
+
+
+		v, err := mpt.Has(nonExistAddr[:])
 		if err == nil {
+			fmt.Println(v)
 			t.Error("期望返回错误，但得到nil")
 		}
 	})

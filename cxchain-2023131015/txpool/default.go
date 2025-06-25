@@ -8,16 +8,17 @@ import (
 )
 
 type TxPool struct {
-	StatDB  statdb.StatDB
-	all map[common.Hash]bool
+	StatDB  *statdb.StatDB
 	pending map[common.Address]boxes
 	queue map[common.Address]map[uint64]*common.Transaction
 	Sortedboxes boxes
 }
 
-func (pool TxPool) NewTX(tx *common.Transaction) error {
-	account := pool.StatDB.Load(tx.From())
-	
+func (pool *TxPool) NewTX(tx *common.Transaction) error {
+	// 由于 pool.StatDB 是指针类型，需要先解引用再调用方法
+	// 假设 statdb.StatDB 接口有一个 Load 方法，这里直接调用
+	account := (*pool.StatDB).Load(tx.From())
+
 	if account.Nonce >= tx.Nonce {
 		return errors.New("nonce error")
 	}
@@ -41,15 +42,16 @@ func (pool TxPool) NewTX(tx *common.Transaction) error {
 	}
 }
 
-func (pool TxPool) addQueueTx(tx *common.Transaction){
+func (pool *TxPool) addQueueTx(tx *common.Transaction){
 	list := pool.queue[tx.From()]
 	if list == nil {
 		list = make(map[uint64]*common.Transaction)
 	}
 	list[tx.Nonce] = tx
+	pool.queue[tx.From()] = list
 }
 
-func (pool TxPool) addPendingTx(tx *common.Transaction){
+func (pool *TxPool) addPendingTx(tx *common.Transaction){
 	boxes := pool.pending[tx.From()]
 	if len(boxes) == 0 {
 		//加到pending中
@@ -78,13 +80,12 @@ func (pool TxPool) addPendingTx(tx *common.Transaction){
 	}
 
 	//看Queue(map类型)中是否要更新出来交易到pending中，其中Nonce值是tx.Nonce+1，并且有个循环检查是否把符合的输出完全
-	list := pool.queue[tx.From()]
-	if list != nil {
+	if pool.queue[tx.From()] != nil {
 		nonce := tx.Nonce + 1
 		for {
-			if tx, ok := list[nonce]; ok {
-				pool.addPendingTx(tx)
-				delete(list, nonce)
+			if txq, ok := pool.queue[tx.From()][nonce]; ok {
+				delete(pool.queue[tx.From()], nonce)
+				pool.addPendingTx(txq)
 				nonce++
 			} else {
 				break
@@ -94,13 +95,13 @@ func (pool TxPool) addPendingTx(tx *common.Transaction){
 	
 }
 
-func (pool TxPool) replacePendingTx(tx *common.Transaction) {
+func (pool *TxPool) replacePendingTx(tx *common.Transaction) {
 	var flag int
 	for i, txbox := range pool.pending[tx.From()] {
 		if txbox.GetFirstNonce() <= tx.Nonce && txbox.GetLastNonce() >= tx.Nonce {
 			// replace
 			if txbox.GetGasPrice() <= tx.GasPrice {
-				txbox.replace(tx)
+				pool.pending[tx.From()][i].replace(tx)
 			}
 			flag = i
 			break
@@ -114,15 +115,68 @@ func (pool TxPool) replacePendingTx(tx *common.Transaction) {
 	//4.第二种情况就直接替换，无需合并盒子
 	//总结：1，4不用管因为已经替换了，只要对3进行检查合并就行了
 
-	if tx.Nonce == pool.pending[tx.From()][flag].GetFirstNonce() && flag > 0 {
-		for{
+	if tx.Nonce == pool.pending[tx.From()][flag].GetFirstNonce() && flag == 0{
+		length:=len(pool.pending[tx.From()][flag].txs)
+		txchange:=pool.pending[tx.From()][flag].pop()
+				box:=txbox{
+					txs: []*common.Transaction{txchange},
+					GasPrice: txchange.GasPrice,
+				}
+				//flag+1之后为原切片，增加新切片于flag处
+				//先扩容
+				pool.pending[tx.From()]=append(pool.pending[tx.From()],box)
+				copy(pool.pending[tx.From()][flag+1:],pool.pending[tx.From()][flag:])
+				pool.pending[tx.From()][flag]=box
+				pool.pending[tx.From()][flag].GasPrice=tx.GasPrice
+
+				flag++
+				tx = pool.pending[tx.From()][flag].txs[0]
+		for i:=1;i<length;i++ {
 			if tx.GasPrice >= pool.pending[tx.From()][flag-1].GetGasPrice() {
 				txchange:=pool.pending[tx.From()][flag].pop()
 				pool.pending[tx.From()][flag-1].push(txchange)
 				tx = pool.pending[tx.From()][flag].txs[0]
-			} else {
-				break
-			}
+			} else if len(pool.pending[tx.From()][flag].txs) > 1 && tx.GasPrice < pool.pending[tx.From()][flag-1].GetGasPrice(){
+				txchange:=pool.pending[tx.From()][flag].pop()
+				box:=txbox{
+					txs: []*common.Transaction{txchange},
+					GasPrice: txchange.GasPrice,
+				}
+				//flag+1之后为原切片，增加新切片于flag处
+				//先扩容
+				pool.pending[tx.From()]=append(pool.pending[tx.From()],box)
+				copy(pool.pending[tx.From()][flag+1:],pool.pending[tx.From()][flag:])
+				pool.pending[tx.From()][flag]=box
+
+				flag++
+				tx = pool.pending[tx.From()][flag].txs[0]
+			} 
+		}
+	}
+
+	if tx.Nonce == pool.pending[tx.From()][flag].GetFirstNonce() && flag > 0 {
+		length:=len(pool.pending[tx.From()][flag].txs)
+		for i:=0;i<length;i++ {
+			if tx.GasPrice >= pool.pending[tx.From()][flag-1].GetGasPrice() {
+				txchange:=pool.pending[tx.From()][flag].pop()
+				pool.pending[tx.From()][flag-1].push(txchange)
+				tx = pool.pending[tx.From()][flag].txs[0]
+			} else if len(pool.pending[tx.From()][flag].txs) > 1 && tx.GasPrice < pool.pending[tx.From()][flag-1].GetGasPrice(){
+				txchange:=pool.pending[tx.From()][flag].pop()
+				box:=txbox{
+					txs: []*common.Transaction{txchange},
+					GasPrice: txchange.GasPrice,
+				}
+				//flag+1之后为原切片，增加新切片于flag处
+				//先扩容
+				pool.pending[tx.From()]=append(pool.pending[tx.From()],box)
+				copy(pool.pending[tx.From()][flag+1:],pool.pending[tx.From()][flag:])
+				pool.pending[tx.From()][flag]=box
+				pool.pending[tx.From()][flag].GasPrice=tx.GasPrice
+
+				flag++
+				tx = pool.pending[tx.From()][flag].txs[0]
+			} 
 		}
 	}
 
@@ -130,10 +184,10 @@ func (pool TxPool) replacePendingTx(tx *common.Transaction) {
  	在循环中，如果新交易的 GasPrice 大于等于前一个交易盒子的 GasPrice，则从当前交易盒子中弹出一个交易（pop），并将其推入前一个交易盒子（push）。
 	更新 tx 为当前交易盒子的第一个交易。
 	如果新交易的 GasPrice 小于前一个交易盒子的 GasPrice，则退出循环。*/
-	
+
 }
 
-func (pool TxPool) Pop() *common.Transaction {
+func (pool *TxPool) Pop() *common.Transaction {
 	boxes := pool.pending[pool.Sortedboxes[0].GetAddress()]
 	if len(boxes) == 0 {
 		return nil
