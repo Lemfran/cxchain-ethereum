@@ -25,7 +25,7 @@ func (pool TxPool) NewTX(tx *common.Transaction) error {
 	boxes:=pool.pending[tx.From()]
 	if len(boxes) > 0 {
 		last := boxes[len(boxes)-1]
-		nonce = last.GetNonce()
+		nonce = last.GetLastNonce()
 	}
 	if tx.Nonce > nonce+1 {
 		pool.addQueueTx(tx)
@@ -76,18 +76,61 @@ func (pool TxPool) addPendingTx(tx *common.Transaction){
 			sort.Sort(pool.Sortedboxes)
 		}
 	}
+
+	//看Queue(map类型)中是否要更新出来交易到pending中，其中Nonce值是tx.Nonce+1，并且有个循环检查是否把符合的输出完全
+	list := pool.queue[tx.From()]
+	if list != nil {
+		nonce := tx.Nonce + 1
+		for {
+			if tx, ok := list[nonce]; ok {
+				pool.addPendingTx(tx)
+				delete(list, nonce)
+				nonce++
+			} else {
+				break
+			}
+		}
+	}
+	
 }
 
 func (pool TxPool) replacePendingTx(tx *common.Transaction) {
-	for _, txbox := range pool.pending[tx.From()] {
-		if txbox.GetNonce() >= tx.Nonce {
+	var flag int
+	for i, txbox := range pool.pending[tx.From()] {
+		if txbox.GetFirstNonce() <= tx.Nonce && txbox.GetLastNonce() >= tx.Nonce {
 			// replace
 			if txbox.GetGasPrice() <= tx.GasPrice {
 				txbox.replace(tx)
 			}
+			flag = i
 			break
 		}
 	}
+
+	//pending[tx.From()]中tx的gas值更新有两种情况，一种是在盒子中间，一种是在盒子首部
+	//1.盒子中间更新就是修改的gas大就替换，修改gas值小就不管了
+	//2.盒子首部更新分为两种种情况，一种是修改的gas大于等于前面盒子，一种是gas值小于前面盒子
+	//3.第一种情况就要把盒子中的交易的gas挨个与前盒子的gas比较，大合并到前面的盒子，小就不动，并且是按Nonce值顺序检查，Nonce小的优先，直到gas小于前面盒子的gas，就不动了
+	//4.第二种情况就直接替换，无需合并盒子
+	//总结：1，4不用管因为已经替换了，只要对3进行检查合并就行了
+
+	if tx.Nonce == pool.pending[tx.From()][flag].GetFirstNonce() && flag > 0 {
+		for{
+			if tx.GasPrice >= pool.pending[tx.From()][flag-1].GetGasPrice() {
+				txchange:=pool.pending[tx.From()][flag].pop()
+				pool.pending[tx.From()][flag-1].push(txchange)
+				tx = pool.pending[tx.From()][flag].txs[0]
+			} else {
+				break
+			}
+		}
+	}
+
+	/*如果新交易的 Nonce 等于当前交易盒子的首部 Nonce，并且当前交易盒子不是第一个盒子（flag > 0），则进入循环。
+ 	在循环中，如果新交易的 GasPrice 大于等于前一个交易盒子的 GasPrice，则从当前交易盒子中弹出一个交易（pop），并将其推入前一个交易盒子（push）。
+	更新 tx 为当前交易盒子的第一个交易。
+	如果新交易的 GasPrice 小于前一个交易盒子的 GasPrice，则退出循环。*/
+	
 }
 
 func (pool TxPool) Pop() *common.Transaction {

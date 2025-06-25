@@ -37,25 +37,29 @@ func (b boxes) Swap(i, j int) {
 	b[i], b[j] = b[j], b[i]
 }
 
-func (b txbox) GetNonce() uint64 {
+func (b txbox) GetFirstNonce() uint64 {
 	return b.txs[0].Nonce
+}
+
+func (b txbox) GetLastNonce() uint64 {
+	return b.txs[len(b.txs)-1].Nonce
 }
 
 func (b txbox) GetGasPrice() uint64 {
 	return b.GasPrice
 }
 
-func (b txbox) push(tx *common.Transaction) {
+func (b *txbox) push(tx *common.Transaction) {
 	b.txs = append(b.txs, tx)
 }
 
-func (b txbox) pop() *common.Transaction {
+func (b *txbox) pop() *common.Transaction {
 	tx := b.txs[0]
 	b.txs = b.txs[1:]
 	return tx
 }
 
-func (b txbox) replace(tx *common.Transaction) {
+func (b *txbox) replace(tx *common.Transaction) {
 	for i, Tx := range b.txs {
 		if tx.Nonce == Tx.Nonce {
 			b.txs[i] = tx
