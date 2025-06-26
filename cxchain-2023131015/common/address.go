@@ -6,8 +6,8 @@ import (
 
 type Address [20]byte
 
-func (a Address) Bytes() any {
-	panic("unimplemented")
+func (a Address) Bytes() []byte {
+	return a[:]
 }
 
 type Addresser interface {

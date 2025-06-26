@@ -4,6 +4,7 @@ import (
 	"cxchain-2023131015/common"
 	"cxchain-2023131015/statdb"
 	"errors"
+	"fmt"
 	"sort"
 )
 
@@ -14,13 +15,23 @@ type TxPool struct {
 	Sortedboxes boxes
 }
 
+func NewTxPool(statDB *statdb.StatDB) *TxPool {
+	return &TxPool{
+		StatDB: statDB,
+		pending: make(map[common.Address]boxes),
+		queue: make(map[common.Address]map[uint64]*common.Transaction),
+		Sortedboxes: make(boxes,0),
+	}
+}
+
 func (pool *TxPool) NewTX(tx *common.Transaction) error {
-	// 由于 pool.StatDB 是指针类型，需要先解引用再调用方法
+	// 由于 pool.StatDB 是指针类型，需要先解引用再调用
 	// 假设 statdb.StatDB 接口有一个 Load 方法，这里直接调用
 	account := (*pool.StatDB).Load(tx.From())
-
+	// 检查账户是否存在
+	
 	if account.Nonce >= tx.Nonce {
-		return errors.New("nonce error")
+		return errors.New("nonce error.")
 	}
 	nonce:=account.Nonce
 	boxes:=pool.pending[tx.From()]
@@ -53,6 +64,7 @@ func (pool *TxPool) addQueueTx(tx *common.Transaction){
 
 func (pool *TxPool) addPendingTx(tx *common.Transaction){
 	boxes := pool.pending[tx.From()]
+	fmt.Println(tx.From())
 	if len(boxes) == 0 {
 		//加到pending中
 		box:=txbox{
@@ -189,11 +201,13 @@ func (pool *TxPool) replacePendingTx(tx *common.Transaction) {
 
 func (pool *TxPool) Pop() *common.Transaction {
 	boxes := pool.pending[pool.Sortedboxes[0].GetAddress()]
+
 	if len(boxes) == 0 {
 		return nil
 	}
 
 	tx := boxes[0].pop()
+	
 	if len(boxes[0].txs) == 0 {
 		pool.pending[pool.Sortedboxes[0].GetAddress()] = boxes[1:]
 	}
