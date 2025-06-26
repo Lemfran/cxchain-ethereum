@@ -1,6 +1,9 @@
 package common
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+)
 
 type Account struct {
 	Nonce    uint64 `json:"nonce"`
@@ -24,4 +27,20 @@ func (a *Account) Serialize() ([]byte, error) {
 
 func (a *Account) Deserialize(jsonBytes []byte) error {
 	return json.Unmarshal(jsonBytes, a)
+}
+
+func EqualAccounts(a, b Account) bool {
+	if a.Nonce != b.Nonce {
+		return false
+	}
+	if a.Balance != b.Balance {
+		return false
+	}
+	if !bytes.Equal(a.Codehash, b.Codehash) {
+		return false
+	}
+	if !bytes.Equal(a.Root, b.Root) {
+		return false
+	}
+	return true
 }

@@ -105,5 +105,13 @@ func TestMPTWithAddress(t *testing.T) {
 		if err := mpt.Insert(address2[:], value2); err != nil {
 			t.Fatalf("插入address2失败: %v", err)
 		}
+
+		v, err := mpt.Has(address1[:])
+		if err != nil {
+			t.Fatalf("Has方法出错: %v", err)
+		}
+		if !bytes.Equal(v, value1) {
+			t.Errorf("期望值: %v, 得到: %v", value1, v)
+		}
 	})	
 }

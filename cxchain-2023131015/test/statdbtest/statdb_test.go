@@ -6,6 +6,7 @@ import (
 	"cxchain-2023131015/kvstore/leveldb"
 	"cxchain-2023131015/statdb"
 	"cxchain-2023131015/trie/mpt"
+	"fmt"
 	"os"
 	"testing"
 )
@@ -46,6 +47,7 @@ func TestStatDB_BasicOperations(t *testing.T) {
 
 	// 测试Load方法
 	loadedAccount := statDB.Load(addr)
+	fmt.Println(loadedAccount)
 	if !equalAccounts(loadedAccount, account) {
 		t.Errorf("Loaded account mismatch, expected: %+v, got: %+v", account, loadedAccount)
 	}

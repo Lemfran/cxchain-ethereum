@@ -65,14 +65,15 @@ func (m *MPT) Insert(key, value []byte) error {
 }
 
 func (m *MPT) Has(key []byte) ([]byte, error) {
+	nibbles := ToNibbles(key)
 	if m.Root == nil {
 		return nil, fmt.Errorf("empty trie")
 	}
-	nibbles := ToNibbles(key)
+	
 	value, err := m.has(m.Root, nibbles)
 	
-	if value == nil || err != nil {
-		return nil, fmt.Errorf("key not found")
+	if err != nil {
+		return nil, fmt.Errorf("key not found8")
 	}
 	return value, nil
 }
@@ -261,6 +262,8 @@ func (mpt *MPT) insert(node Node, nibbles, value []byte) (Node, error) {
 }
 
 func (mpt *MPT) has(node Node, nibbles []byte) ([]byte, error) {
+	fmt.Println("1")
+	fmt.Println(nibbles)
 	switch n := node.(type) {
 	case *LeafNode:
 		// 如果叶子节点的 key 为空，说明这是一个分支节点的直接子节点，直接返回其 value
@@ -312,10 +315,10 @@ func (mpt *MPT) has(node Node, nibbles []byte) ([]byte, error) {
 		}
 		child, err := mpt.Loadnode(n.Child[idx])
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("key not found6")
 		}
 		if child == nil {
-			return nil, fmt.Errorf("key not found6")
+			return nil, fmt.Errorf("key not found7")
 		}
 		return mpt.has(child, nibbles[1:])
 

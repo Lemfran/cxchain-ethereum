@@ -2,13 +2,13 @@ package txpool
 
 import (
 	"cxchain-2023131015/common"
+	"cxchain-2023131015/statdb"
 )
 
 type pool interface {
-	AddTransaction(tx *common.Transaction) error
-	PopTransaction() (*common.Transaction, error)
-	SetStatRoot(root []byte)
-	NotifyTxEvent(txs []*common.Transaction)
+	Pop() *common.Transaction
+	NewTX(tx *common.Transaction) error
+	NewTxPool(statDB *statdb.StatDB) *TxPool
 }
 
 type txbox struct {
@@ -54,6 +54,11 @@ func (b *txbox) push(tx *common.Transaction) {
 }
 
 func (b *txbox) pop() *common.Transaction {
+	if len(b.txs) == 1 {
+		tx := b.txs[0]
+		b.txs = nil
+		return tx
+	}
 	tx := b.txs[0]
 	b.txs = b.txs[1:]
 	return tx

@@ -64,7 +64,7 @@ func (pool *TxPool) addQueueTx(tx *common.Transaction){
 
 func (pool *TxPool) addPendingTx(tx *common.Transaction){
 	boxes := pool.pending[tx.From()]
-	fmt.Println(tx.From())
+
 	if len(boxes) == 0 {
 		//加到pending中
 		box:=txbox{
@@ -78,7 +78,11 @@ func (pool *TxPool) addPendingTx(tx *common.Transaction){
 		last := boxes[len(boxes)-1]
 		if  tx.GasPrice >= last.GetGasPrice() {
 			//加到pending中
+
 			last.push(tx)
+			pool.pending[tx.From()][len(boxes)-1] = last
+
+			
 		} else {
 			//新建一个txbox在pending中
 			box:=txbox{
@@ -188,7 +192,9 @@ func (pool *TxPool) replacePendingTx(tx *common.Transaction) {
 
 				flag++
 				tx = pool.pending[tx.From()][flag].txs[0]
-			} 
+			} else if len(pool.pending[tx.From()][flag].txs) == 1 {
+				pool.pending[tx.From()][flag].GasPrice=tx.GasPrice
+			}
 		}
 	}
 
@@ -201,7 +207,7 @@ func (pool *TxPool) replacePendingTx(tx *common.Transaction) {
 
 func (pool *TxPool) Pop() *common.Transaction {
 	boxes := pool.pending[pool.Sortedboxes[0].GetAddress()]
-
+	fmt.Println(boxes)
 	if len(boxes) == 0 {
 		return nil
 	}
