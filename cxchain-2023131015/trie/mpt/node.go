@@ -1,6 +1,9 @@
 package mpt
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type NodeType int
 
@@ -106,4 +109,40 @@ func serializeNode(node interface{}) ([]byte, error) {
 
 func deserializeNode(jsonBytes []byte, node interface{}) error {
     return json.Unmarshal(jsonBytes, node)
+}
+
+func DeserializeNode(jsonBytes []byte, node interface{}) (Node, error) {
+    var nodeType struct {
+        NodeType NodeType `json:"NodeType"`
+    }
+    
+    if err := json.Unmarshal(jsonBytes, &nodeType); err != nil {
+        return nil, err
+    }
+
+    var result Node
+    switch nodeType.NodeType {
+    case LeafNodeType:
+        leaf := &LeafNode{}
+        if err := json.Unmarshal(jsonBytes, leaf); err != nil {
+            return nil, err
+        }
+        result = leaf
+    case ExtensionNodeType:
+        ext := &ExtensionNode{}
+        if err := json.Unmarshal(jsonBytes, ext); err != nil {
+            return nil, err
+        }
+        result = ext
+    case BranchNodeType:
+        branch := &BranchNode{}
+        if err := json.Unmarshal(jsonBytes, branch); err != nil {
+            return nil, err
+        }
+        result = branch
+    default:
+        return nil, fmt.Errorf("unknown node type")
+    }
+    
+    return result, nil
 }

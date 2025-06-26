@@ -51,6 +51,10 @@ func TestMPTHasWithAddress(t *testing.T) {
 	
 	// 测试不存在的地址
 	t.Run("NonExistAddress", func(t *testing.T) {
+		if err := mpt.Insert(address[:], value); err != nil {
+			t.Fatalf("插入失败: %v", err)
+		}
+
 		var nonExistAddr [20]byte
 		copy(nonExistAddr[:], []byte{
 	    0x32, 0x16, 0x17, 0x18, 0x19,
@@ -64,6 +68,14 @@ func TestMPTHasWithAddress(t *testing.T) {
 		if err == nil {
 			fmt.Println(v)
 			t.Error("期望返回错误，但得到nil")
+		}
+
+		got, err := mpt.Has(address[:])
+		if err != nil {
+			t.Fatalf("Has方法出错: %v", err)
+		}
+		if !bytes.Equal(got, value) {
+			t.Errorf("期望值: %v, 得到: %v", value, got)
 		}
 	})
 }
@@ -93,6 +105,14 @@ func TestMPTWithAddress(t *testing.T) {
 	    0x1f, 0x20, 0x21, 0x22, 0x23,
 	    0x24, 0x25, 0x26, 0x27, 0x28,
 	})
+	var address3 [20]byte
+	copy(address3[:], []byte{
+	    0x23, 0x16, 0x17, 0x18, 0x19,
+	    0x1a, 0x1b, 0x1c, 0x1d, 0x1e,
+	    0x1f, 0x20, 0x21, 0x22, 0x23,
+	    0x24, 0x25, 0x26, 0x27, 0x28,
+	})
+	
 	value1 := []byte("value1")
 	value2 := []byte("value2")
 	
@@ -105,7 +125,7 @@ func TestMPTWithAddress(t *testing.T) {
 		if err := mpt.Insert(address2[:], value2); err != nil {
 			t.Fatalf("插入address2失败: %v", err)
 		}
-
+		
 		v, err := mpt.Has(address1[:])
 		if err != nil {
 			t.Fatalf("Has方法出错: %v", err)
