@@ -64,7 +64,11 @@ func (n *BranchNode) GetHash() []byte {
 }
 
 func (n *LeafNode) Serialize() ([]byte, error) {
-    return serializeNode(n)
+    jsonBytes, err := json.Marshal(n)
+    if err != nil {
+        return nil, err
+    }
+    return jsonBytes, nil
 }
 
 func (n *LeafNode) Deserialize(jsonBytes []byte) error {
@@ -76,7 +80,11 @@ func (n *LeafNode) GetNodeType() NodeType {
 }
 
 func (n *ExtensionNode) Serialize() ([]byte, error) {
-    return serializeNode(n)
+    jsonBytes, err := json.Marshal(n)
+    if err != nil {
+        return nil, err
+    }
+    return jsonBytes, nil
 }
 
 func (n *ExtensionNode) Deserialize(jsonBytes []byte) error {
@@ -88,7 +96,11 @@ func (n *ExtensionNode) GetNodeType() NodeType {
 }
 
 func (n *BranchNode) Serialize() ([]byte, error) {
-    return serializeNode(n)
+    jsonBytes, err := json.Marshal(n)
+    if err != nil {
+        return nil, err
+    }
+    return jsonBytes, nil
 }
 
 func (n *BranchNode) Deserialize(jsonBytes []byte) error {
@@ -97,14 +109,6 @@ func (n *BranchNode) Deserialize(jsonBytes []byte) error {
 
 func (n *BranchNode) GetNodeType() NodeType {
     return n.NodeType
-}
-
-func serializeNode(node interface{}) ([]byte, error) {
-    jsonBytes, err := json.Marshal(node)
-    if err != nil {
-        return nil, err
-    }
-    return jsonBytes, nil
 }
 
 func deserializeNode(jsonBytes []byte, node interface{}) error {

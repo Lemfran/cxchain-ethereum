@@ -8,8 +8,6 @@ import (
 
 type IMachine interface {
 	Execute(tx common.Transaction) error
-
-
 	Execute1(tx common.Transaction) *common.Receipt
 }
 
@@ -21,7 +19,7 @@ func NewStateMachine(txPool *txpool.TxPool) *StateMachine {
 	return &StateMachine{TxPool: txPool}
 }
 
-func (m *StateMachine) Execute( tx common.Transaction) {
+func (m *StateMachine) Execute( tx common.Transaction) error {
 
 	from := tx.From()
 	to := tx.To
@@ -30,7 +28,7 @@ func (m *StateMachine) Execute( tx common.Transaction) {
 	fmt.Println(from)
 	fmt.Println(gasUsed)
 	if tx.GasPrice < 21000 {
-		return
+		return fmt.Errorf("gas price is too low")
 	} else {
 		gasUsed = 1
 	}
@@ -43,7 +41,7 @@ func (m *StateMachine) Execute( tx common.Transaction) {
 	
 	fmt.Println(accountfrom)
 	if accountfrom.Balance < cost {
-		return
+		return fmt.Errorf("balance is not enough")
 	}
 
 	accountfrom.Balance = accountfrom.Balance - cost
@@ -67,4 +65,17 @@ func (m *StateMachine) Execute( tx common.Transaction) {
 	accountto.Balance= accountto.Balance + value
 
 	m.TxPool.StatDB.Store(toAddr, accountto)
+	return nil
 }
+
+func (m *StateMachine) Execute1(tx common.Transaction) *common.Receipt {
+	var receipt common.Receipt
+	err := m.Execute(tx)
+	if err != nil {
+		return nil
+	}
+	receipt.Status = 1
+	receipt.TransactionHash = tx.Hash()
+	return &receipt
+}
+

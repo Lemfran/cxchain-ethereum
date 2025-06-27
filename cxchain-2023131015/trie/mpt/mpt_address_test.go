@@ -114,24 +114,34 @@ func TestMPTWithAddress(t *testing.T) {
 	})
 	
 	value1 := []byte("value1")
-	value2 := []byte("value2")
+	//value2 := []byte("value2")
+	value3 := []byte("valuel3")
+
 	
 	// 测试插入
 	t.Run("Insert", func(t *testing.T) {
+		if err := mpt.Insert(address3[:], value3); err != nil {
+			t.Fatalf("插入address3失败: %v", err)
+		}
+		
 		if err := mpt.Insert(address1[:], value1); err != nil {
 			t.Fatalf("插入address1失败: %v", err)
 		}
 		
-		if err := mpt.Insert(address2[:], value2); err != nil {
-			t.Fatalf("插入address2失败: %v", err)
-		}
-		
-		v, err := mpt.Has(address1[:])
+		v, err := mpt.Has(address3[:])
 		if err != nil {
 			t.Fatalf("Has方法出错: %v", err)
 		}
-		if !bytes.Equal(v, value1) {
-			t.Errorf("期望值: %v, 得到: %v", value1, v)
+		if !bytes.Equal(v, value3) {
+			t.Errorf("期望值: %v, 得到: %v", value3, v)
+		}
+
+		v1, err := mpt.Has(address1[:])
+		if err != nil {
+			t.Fatalf("Has方法出错: %v", err)
+		}
+		if !bytes.Equal(v1, value1) {
+			t.Errorf("期望值: %v, 得到: %v", value1, v1)
 		}
 	})	
 }

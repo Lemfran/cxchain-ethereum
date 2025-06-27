@@ -38,7 +38,7 @@ func (s *StatDB) Load(addr common.Address) common.Account {
 	if err != nil {
 		return common.Account{}
 	}
-	fmt.Println("1")
+	fmt.Println("获取到用户状态")
 	return account
 }
 

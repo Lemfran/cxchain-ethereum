@@ -30,6 +30,8 @@ func (pool *TxPool) NewTX(tx *common.Transaction) error {
 	account := (*pool.StatDB).Load(tx.From())
 	// 检查账户是否存在
 	
+
+	fmt.Println("-----------------------3-------------------------")
 	if account.Nonce >= tx.Nonce {
 		return errors.New("nonce error.")
 	}
@@ -40,10 +42,13 @@ func (pool *TxPool) NewTX(tx *common.Transaction) error {
 		nonce = last.GetLastNonce()
 	}
 	if tx.Nonce > nonce+1 {
+		fmt.Println("-----------------------4-------------------------")
 		pool.addQueueTx(tx)
+		fmt.Println("-----------------------5-------------------------")
 		return nil
 	} else if tx.Nonce == nonce+1 {
 		// push
+		
 		pool.addPendingTx(tx)
 		return nil
 	} else {
@@ -54,6 +59,7 @@ func (pool *TxPool) NewTX(tx *common.Transaction) error {
 }
 
 func (pool *TxPool) addQueueTx(tx *common.Transaction){
+	fmt.Println("-----------------------6-------------------------")
 	list := pool.queue[tx.From()]
 	if list == nil {
 		list = make(map[uint64]*common.Transaction)
@@ -206,15 +212,24 @@ func (pool *TxPool) replacePendingTx(tx *common.Transaction) {
 }
 
 func (pool *TxPool) Pop() *common.Transaction {
-	boxes := pool.pending[pool.Sortedboxes[0].GetAddress()]
-	fmt.Println(boxes)
-	if len(boxes) == 0 {
-		return nil
-	}
+	fmt.Println("-----------------------7-------------------------")
+	fmt.Println(pool.Sortedboxes)
+	if len(pool.Sortedboxes) == 0 || len(pool.pending) == 0 {
+        return nil
+    }
+    
+    addr := pool.Sortedboxes[0].GetAddress()
+	fmt.Println("-----------------------7-------------------------",addr)
+    boxes, exists := pool.pending[addr]
+    if !exists || len(boxes) == 0 {
+        return nil
+    }
 
-	tx := boxes[0].pop()
-	
-	if len(boxes[0].txs) == 0 {
+	fmt.Println(boxes)
+    tx := pool.pending[addr][0].pop()
+	pool.Sortedboxes[0].txs=pool.Sortedboxes[0].txs[1:]
+
+	if len(pool.Sortedboxes[0].txs) == 0 {
 		pool.pending[pool.Sortedboxes[0].GetAddress()] = boxes[1:]
 	}
 	return tx

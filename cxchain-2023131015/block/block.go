@@ -31,3 +31,22 @@ type Blockchain struct {
 	Txpool        txpool.TxPool
 }
 
+func NewBlock() *Body {
+	return &Body{
+		Transactions: make([]*common.Transaction, 0),
+		Receipts:  make([]*common.Receipt, 0),
+	}
+}
+
+func NewHeader(parent *Header) *Header {
+	return &Header{
+		Root:       parent.Root,
+		ParentHash: parent.ParentHash,
+		Height:     parent.Height + 1,
+		Coinbase:   parent.Coinbase,
+		Timestamp:  parent.Timestamp,
+		Nonce:      parent.Nonce,
+	}
+}
+
+

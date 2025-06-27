@@ -74,6 +74,9 @@ func (b *txbox) replace(tx *common.Transaction) {
 }
 
 func (b txbox) GetAddress() common.Address {
+	if len(b.txs) == 0 {
+		return common.Address{}
+	}
 	return b.txs[0].From()
 }
 
