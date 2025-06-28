@@ -64,7 +64,7 @@ func (maker *BlockMaker) NewBlock() {
 
 func (maker *BlockMaker) Pack() {
 	end := time.After(1 * time.Second)
-	for {
+	for i:=0;i<1;i++{
 		select {
 		case <-maker.interupt:
 			break
@@ -79,19 +79,24 @@ func (maker *BlockMaker) Pack() {
 }
 
 func (maker *BlockMaker) pack() bool {
-	tx := maker.Txpool.Pop()
-	if tx == nil {
+	txs := maker.Txpool.Pop()
+	if txs == nil {
 		time.Sleep(1 * time.Millisecond) // 添加短暂休眠避免CPU空转
 		return false
 	}
 	
-	receiption := maker.Exec.Execute1(*tx)
-	if receiption == nil {
-		return false
+	for i:=0;i<len(txs);i++ {
+		receiption := maker.Exec.Execute1(*txs[i])
+		if receiption == nil {
+			return false
+		}
+		if receiption == nil {
+			return false
+		}
+		fmt.Println("-----------------------8-------------------------",txs[i])
+		maker.NextBody.Transactions = append(maker.NextBody.Transactions, txs[i])
+		maker.NextBody.Receipts = append(maker.NextBody.Receipts, receiption)
 	}
-	fmt.Println("-----------------------8-------------------------")
-	maker.NextBody.Transactions = append(maker.NextBody.Transactions, tx)
-	maker.NextBody.Receipts = append(maker.NextBody.Receipts, receiption)
 	return true
 }
 

@@ -29,13 +29,11 @@ func NewStatDB(db *mpt.MPT) *StatDB {
 func (s *StatDB) Load(addr common.Address) common.Account {
 	//从mpt中根据地址获取用户状态
 	addrBytes := addr[:]
-
 	value, err := s.db.Has(addrBytes)
 	if err != nil {
 		fmt.Println("not found")
 		return common.Account{}
 	}
-	fmt.Println("3")
 	var account common.Account
 	err = account.Deserialize(value)
 	if err != nil {
@@ -56,6 +54,5 @@ func (s *StatDB) Store(addr common.Address, account common.Account) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("2")
 	return nil
 }

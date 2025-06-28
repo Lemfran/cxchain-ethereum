@@ -118,3 +118,4 @@ func (block *Block) SerializeBlock() ([]byte, error) {
 }
 
 
+

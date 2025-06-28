@@ -115,7 +115,6 @@ func TestNewTX2(t *testing.T) {
 	err := txPool.NewTX(tx)
 	err1 := txPool.NewTX(tx1)
 	err2 := txPool.NewTX(tx2)
-
 	err3 := txPool.NewTX(tx3)
 
 	if err != nil {
@@ -171,7 +170,10 @@ func TestNewTX3(t *testing.T) {
 	fmt.Println(tx1)
 
 	err := txPool.NewTX(tx)
+	fmt.Println("tx插入")
+
 	err1 := txPool.NewTX(tx1)
+	fmt.Println("tx1插入")
 	if err != nil {
 		t.Fatalf("NewTX failed: %v", err)
 	}

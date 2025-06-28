@@ -22,7 +22,6 @@ func (mpt *MPT) Loadnode(key []byte) (Node, error) {
 	fmt.Printf("加载节点\n")
 	data, err := mpt.DB.Get(key[:])
 	if err != nil {
-		fmt.Printf("Loadnode: key=%v, err=%v\n", key, err)
 		return nil, err
 	}
 	var node Node
@@ -32,7 +31,7 @@ func (mpt *MPT) Loadnode(key []byte) (Node, error) {
 		return nil, err
 	}
 	
-	fmt.Printf("llllllllllllllllllLoadnode: key=%v, node=%v\n", key, nodereturn)
+	fmt.Printf("加载节点成功: key=%v, node=%v\n", key, nodereturn)
 	return nodereturn, nil
 }
 
@@ -42,8 +41,8 @@ func (mpt *MPT) Savenode(node Node) error {
 		return err
 	}
 	h := Hash(code)
-	fmt.Printf("\nSavenode: key=%v, node=%v\n", h, node)
 	mpt.DB.Put(h[:], code)
+	fmt.Printf("\n保存节点成功: key=%v, node=%v\n", h, node)
 	return nil
 }
 
@@ -57,14 +56,14 @@ func findSamePrefix(a, b []byte) []byte {
 
 func (m *MPT) Insert(key, value []byte) error {
 	nibbles := ToNibbles(key)
-	fmt.Printf("Put: key=%v, value=%v, nibbles=%x\n", key, value, nibbles)
+	fmt.Printf("插入: key=%v, value=%v, nibbles=%x\n", key, value, nibbles)
 	if m.Root == nil {
 		m.Root = &LeafNode{
 			NodeType: LeafNodeType,
 			Key:      nibbles,
 			Value:    value,
 		}
-		fmt.Printf("Create root LeafNode: key=%v, value=%v\n", nibbles, value)
+		fmt.Printf("创建root节点: key=%v, value=%v\n", nibbles, value)
 		return m.Savenode(m.Root)
 	}
 	
@@ -81,12 +80,12 @@ func (m *MPT) Has(key []byte) ([]byte, error) {
 	if m.Root == nil {
 		return nil, fmt.Errorf("empty trie")
 	}
-
 	value, err := m.has(m.Root, nibbles)
 
 	if err != nil {
 		return nil, fmt.Errorf("key not found8")
 	}
+	fmt.Println("查找成功，value为",value)
 	return value, nil
 }
 
@@ -98,7 +97,7 @@ func (mpt *MPT) insert(node Node, nibbles, value []byte) (Node, error) {
 	case *LeafNode:
 		Prefix := findSamePrefix(n.Key, nibbles)
 		//Prefix输出
-		fmt.Printf("Prefix=%v\n", Prefix)
+		fmt.Println("共同前缀=", Prefix)
 		if bytes.Equal(n.Key, nibbles) {
 			n.Value = value
 			if err := mpt.Savenode(n); err != nil {
@@ -291,11 +290,10 @@ func (mpt *MPT) insert(node Node, nibbles, value []byte) (Node, error) {
 }
 
 func (mpt *MPT) has(node Node, nibbles []byte) ([]byte, error) {
-	fmt.Println("1")
-	fmt.Println(nibbles)
+	fmt.Println("has方法:path:",nibbles)
 	switch n := node.(type) {
 	case *LeafNode:
-		fmt.Println("22222222222222222222222222222222222222222222333333333")
+		fmt.Println("has：在叶子节点查找")
 		
 		// 如果叶子节点的 key 为空，说明这是一个分支节点的直接子节点，直接返回其 value
 		if len(n.Key) == 0 {

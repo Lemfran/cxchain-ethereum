@@ -87,7 +87,14 @@ func (pool *TxPool) addPendingTx(tx *common.Transaction){
 
 			last.push(tx)
 			pool.pending[tx.From()][len(boxes)-1] = last
-
+			//把所有用户的盒子放入新的交易盒子当中
+			var newboxs []txbox
+			for _, box := range pool.pending {
+				newboxs = append(newboxs, box...)
+			}
+			pool.Sortedboxes = newboxs
+			//更新交易盒子
+			sort.Sort(pool.Sortedboxes)
 			
 		} else {
 			//新建一个txbox在pending中
@@ -211,9 +218,11 @@ func (pool *TxPool) replacePendingTx(tx *common.Transaction) {
 
 }
 
-func (pool *TxPool) Pop() *common.Transaction {
+func (pool *TxPool) Pop() []*common.Transaction {
+	var txs []*common.Transaction
 	fmt.Println("-----------------------7-------------------------")
-	fmt.Println(pool.Sortedboxes,"123")
+	fmt.Println("全部交易盒子：",pool.Sortedboxes)
+
 	if len(pool.Sortedboxes) == 0 || len(pool.pending) == 0 {
         return nil
     }
@@ -225,12 +234,18 @@ func (pool *TxPool) Pop() *common.Transaction {
         return nil
     }
 
-	fmt.Println(boxes)
-    tx := pool.pending[addr][0].pop()
-	pool.Sortedboxes[0].txs=pool.Sortedboxes[0].txs[1:]
+	fmt.Println(boxes,len(boxes[0].txs))
+	txsLen := len(boxes[0].txs)
+	for i:=0;i<txsLen;i++ {
+		fmt.Println("ok")
+		tx := pool.pending[addr][0].pop()
+		pool.Sortedboxes[0].txs=pool.Sortedboxes[0].txs[1:]
+		txs = append(txs, tx)
+	}
+	fmt.Println(txs)
 
 	if len(pool.Sortedboxes[0].txs) == 0 {
 		pool.pending[pool.Sortedboxes[0].GetAddress()] = boxes[1:]
 	}
-	return tx
+	return txs
 }
