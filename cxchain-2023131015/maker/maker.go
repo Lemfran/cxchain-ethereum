@@ -22,7 +22,7 @@ type BlockMaker struct {
 	Exec    *vm.StateMachine
 
 	Config ChainConfig
-	Chain  block.Blockchain
+	Chain  *block.Blockchain
 
 	NextHeader  *block.Header
 	NextBody    *block.Body
@@ -32,37 +32,39 @@ type BlockMaker struct {
 }
 
 func NewBlockMaker(txpool *txpool.TxPool, statedb *statdb.StatDB, exec *vm.StateMachine) *BlockMaker {
+	chain :=block.NewBlockchain(txpool, statedb)
 	return &BlockMaker{
 		Txpool:  txpool,
 		Statedb: statedb,
 		Exec:    exec,
         interupt: make(chan bool, 1), // 初始化带缓冲的 channel
+		Chain:   chain,
 	}
 }
 
 func (maker *BlockMaker) NewBlock() {
-	maker.NextBody = block.NewBlock()
+	maker.NextBody = block.NewBody()
+
     
     // 判断是否是创世区块
     if maker.IsGenesisBlock() {
         maker.NextHeader = &block.Header{
-			Root:       common.Hash{},
+			Root:       maker.Statedb.GetRoot(),
 			ParentHash: common.Hash{},
 			Height:     0,
-			Coinbase:   common.Address{},
-			Timestamp:  0,
-			Nonce:      0,
 		}
+		maker.Chain.CurrentHeader = *maker.NextHeader
     } else {
         maker.NextHeader = block.NewHeader(&maker.Chain.CurrentHeader)
+		maker.Chain.CurrentHeader = *maker.NextHeader
     }
     
     maker.NextHeader.Coinbase = maker.Config.Coinbase
 }
 
 func (maker *BlockMaker) Pack() {
-	end := time.After(maker.Config.Duration)
-	for i := 0; i < 10; i++ {
+	end := time.After(1 * time.Second)
+	for {
 		select {
 		case <-maker.interupt:
 			break

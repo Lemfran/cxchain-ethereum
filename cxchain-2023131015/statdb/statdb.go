@@ -16,6 +16,9 @@ type StatDB_Interface interface {
 	Store(addr common.Address, account common.Account) error
 }
 
+func (s *StatDB) GetRoot() common.Hash {
+	return common.Hash(s.db.Root.GetHash())
+}
 
 func NewStatDB(db *mpt.MPT) *StatDB {
 	return &StatDB{

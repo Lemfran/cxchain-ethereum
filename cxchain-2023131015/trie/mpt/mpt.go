@@ -19,7 +19,7 @@ func NewMPT(db *leveldb.LevelDBStore) *MPT {
 }
 
 func (mpt *MPT) Loadnode(key []byte) (Node, error) {
-	fmt.Printf("jinru Loadnode\n")
+	fmt.Printf("加载节点\n")
 	data, err := mpt.DB.Get(key[:])
 	if err != nil {
 		fmt.Printf("Loadnode: key=%v, err=%v\n", key, err)

@@ -213,7 +213,7 @@ func (pool *TxPool) replacePendingTx(tx *common.Transaction) {
 
 func (pool *TxPool) Pop() *common.Transaction {
 	fmt.Println("-----------------------7-------------------------")
-	fmt.Println(pool.Sortedboxes)
+	fmt.Println(pool.Sortedboxes,"123")
 	if len(pool.Sortedboxes) == 0 || len(pool.pending) == 0 {
         return nil
     }

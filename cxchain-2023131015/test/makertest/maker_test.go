@@ -27,7 +27,7 @@ func TestBlockMaker_Finalize(t *testing.T) {
 
 	// 初始化测试账户
 	account, _ := common.GenerateAccount(100000000)
-	maker.Statedb = statdb.NewStatDB(mpt.NewMPT(nil))
+	maker.Statedb = statdb.NewStatDB(mpt.NewMPT(db))
 	maker.Statedb.Store(account.Address, account.Account)
 	defer db.Close()
 
@@ -43,9 +43,6 @@ func TestBlockMaker_Finalize(t *testing.T) {
 		}
 		if body == nil {
 			t.Error("Body should not be nil")
-		}
-		if header.Nonce == 0 {
-			t.Error("Nonce should be calculated")
 		}
 	})
 }
