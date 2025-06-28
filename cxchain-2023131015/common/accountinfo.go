@@ -11,6 +11,8 @@ type AccountInfo struct {
 	Account    Account
 }
 
+
+//生成账户信息，方便测试
 func GenerateAccount(balance uint64) (*AccountInfo, error) {
 
 	privKey, err := crypto.GenerateKey()

@@ -87,3 +87,39 @@ func TestBlockMaker_Pack(t *testing.T) {
 		t.Error("Should pack at least one transaction")
 	}
 }
+
+func TestBlockMaker_PackBlock(t *testing.T) {
+	db, err := leveldb.NewLevelDBStore("testdb")
+	if err != nil {
+		panic(err)
+	}
+	mptDB := mpt.NewMPT(db)
+	statDB := statdb.NewStatDB(mptDB)
+	txPool := txpool.NewTxPool(statDB)
+	machine := vm.NewStateMachine(txPool)
+	maker := maker.NewBlockMaker(txPool, statDB, machine)
+	defer db.Close()
+
+
+	// 添加测试交易
+	account1, _ := common.GenerateAccount(100000000)
+	account2, _ := common.GenerateAccount(100000000)
+	tx := common.NewTransaction(account2.Address[:], 100, 1, 100000, 100000, []byte(""))
+	tx2 := common.NewTransaction(account2.Address[:], 100, 2, 100000, 120000, []byte(""))
+	tx.Sign(account1.PrivateKey)
+	tx2.Sign(account1.PrivateKey)
+
+	maker.Statedb.Store(account1.Address, account1.Account)
+	maker.Statedb.Store(account2.Address, account2.Account)
+	fmt.Printf("-------------------1------------------------")
+	txPool.NewTX(tx)
+	txPool.NewTX(tx2)
+	fmt.Println("------------------------------------------------------------------------")
+
+	// 测试PackBlock方法
+	maker.PackBlock()
+
+	txPool.NewTX(tx2)
+
+	maker.PackBlock()
+}
