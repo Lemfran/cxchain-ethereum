@@ -37,6 +37,16 @@ type BlockMaker struct {
 	interupt chan bool         // 中断通道
 }
 
+// PackBlock 打包区块的完整流程
+func (maker *BlockMaker) PackBlock() {
+	maker.Config.Duration = 3 * time.Second
+	maker.NewBlock()
+	maker.Pack()
+	header, _:= maker.Finalize()
+	maker.Chain.CurrentHeader = *header
+	fmt.Println("打包完成")
+}
+
 // NewBlockMaker 创建新的区块生成器
 func NewBlockMaker(txpool *txpool.TxPool, statedb *statdb.StatDB, exec *vm.StateMachine) *BlockMaker {
 	chain := block.NewBlockchain(txpool, statedb)
@@ -136,12 +146,4 @@ func (maker *BlockMaker) IsGenesisBlock() bool {
 		return maker.Chain.CurrentHeader == zeroHeader
 }
 
-// PackBlock 打包区块的完整流程
-func (maker *BlockMaker) PackBlock() {
-	maker.Config.Duration = 3 * time.Second
-	maker.NewBlock()
-	maker.Pack()
-	header, _:= maker.Finalize()
-	maker.Chain.CurrentHeader = *header
-	fmt.Printf("打包完成")
-}
+

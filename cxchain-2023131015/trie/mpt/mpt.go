@@ -299,75 +299,83 @@ func (mpt *MPT) insert(node Node, nibbles, value []byte) (Node, error) {
 
 // has 内部方法，递归查找key对应的value
 func (mpt *MPT) has(node Node, nibbles []byte) ([]byte, error) {
-	fmt.Println("has方法:path:",nibbles)
-	switch n := node.(type) {
-	case *LeafNode:
-		fmt.Println("has：在叶子节点查找")
-		
-		// 如果叶子节点的 key 为空，说明这是一个分支节点的直接子节点，直接返回其 value
-		if len(n.Key) == 0 {
-			return n.Value, nil
-		}
-		// 如果查找的key长度小于叶子节点的key长度，或者key不匹配，说明key不存在
-		if len(nibbles) < len(n.Key) {
+    fmt.Println("has方法:path:", nibbles)
+    switch n := node.(type) {
+    case *LeafNode:
+        fmt.Println("has方法：进入叶子节点")
+        fmt.Printf("has方法：叶子节点key长度 %d, 查找key长度 %d\n", len(n.Key), len(nibbles))
+        
+        if len(n.Key) == 0 {
+            fmt.Println("has方法：叶子节点key为空，直接返回value")
+            return n.Value, nil
+        }
+        
+        if len(nibbles) < len(n.Key) {
+            fmt.Println("has方法：查找key长度不足，key不存在")
+            return nil, fmt.Errorf("key not found1")
+        }
+        
+        if !bytes.Equal(n.Key, nibbles[:len(n.Key)]) {
+            fmt.Println("has方法：key前缀不匹配，key不存在")
+            return nil, fmt.Errorf("key not found2")
+        }
+        
+        if len(nibbles) != len(n.Key) {
+            fmt.Println("has方法：key长度不匹配，key不存在")
+            return nil, fmt.Errorf("key not found3")
+        }
+        
+        fmt.Println("has方法：找到匹配的叶子节点")
+        return n.Value, nil
+        
+    case *ExtensionNode:
+        fmt.Println("has方法：进入扩展节点")
+        fmt.Printf("has方法：扩展节点路径长度 %d, 查找key长度 %d\n", len(n.Key), len(nibbles))
+        
+        if len(nibbles) < len(n.Key) {
+            fmt.Println("has方法：查找key长度不足，key不存在")
+            return nil, fmt.Errorf("key not found4")
+        }
+        
+        if !bytes.Equal(n.Key, nibbles[:len(n.Key)]) {
+            fmt.Println("has方法：路径前缀不匹配，key不存在")
+            return nil, fmt.Errorf("key not found5")
+        }
+        
+        fmt.Println("has方法：路径匹配，加载子节点继续查找")
+        child, err := mpt.Loadnode(n.Value)
+        if err != nil {
+            fmt.Println("has方法：加载子节点失败")
+            return nil, err
+        }
+        return mpt.has(child, nibbles[len(n.Key):])
+        
+    case *BranchNode:
+        fmt.Println("has方法：进入分支节点")
+        if len(nibbles) == 0 {
+            fmt.Println("has方法：nibbles为空，返回Child[16]的值")
+            return n.Child[16], nil
+        }
+        idx := nibbles[0]
+        fmt.Printf("has方法：处理索引 %d，剩余nibbles长度 %d\n", idx, len(nibbles)-1)
+        if idx >= 16 {
+            fmt.Printf("has方法：无效的nibble值 %d\n", idx)
+            return nil, fmt.Errorf("invalid nibble value: %d", idx)
+        }
+        child, err := mpt.Loadnode(n.Child[idx])
+        fmt.Println(n.Child[idx])
+        if err != nil {
+            fmt.Println("has方法：加载子节点失败")
+            return nil, fmt.Errorf("key not found6")
+        }
+        if child == nil {
+            fmt.Println("has方法：子节点为空")
+            return nil, fmt.Errorf("key not found7")
+        }
+        fmt.Println("has方法：递归查找子节点")
+        return mpt.has(child, nibbles[1:])
 
-			return nil, fmt.Errorf("key not found1")
-		}
-		// 比较key的前缀
-		if !bytes.Equal(n.Key, nibbles[:len(n.Key)]) {
-
-			return nil, fmt.Errorf("key not found2")
-		}
-		// 如果查找的key长度与叶子节点的key长度不相等，说明不是完全匹配，key不存在
-		if len(nibbles) != len(n.Key) {
-
-			return nil, fmt.Errorf("key not found3")
-		}
-		return n.Value, nil
-
-	case *ExtensionNode:
-		// 如果查找的key长度小于扩展节点的路径长度，或者路径不匹配，说明key不存在
-		if len(nibbles) < len(n.Key) {
-
-			return nil, fmt.Errorf("key not found4")
-		}
-		// 比较路径前缀
-		if !bytes.Equal(n.Key, nibbles[:len(n.Key)]) {
-
-			return nil, fmt.Errorf("key not found5")
-		}
-		child, err := mpt.Loadnode(n.Value)
-		if err != nil {
-			return nil, err
-		}
-		return mpt.has(child, nibbles[len(n.Key):])
-
-	case *BranchNode:
-		fmt.Println("has方法：进入分支节点")
-		if len(nibbles) == 0 {
-			fmt.Println("has方法：nibbles为空，返回Child[16]的值")
-			return n.Child[16], nil
-		}
-		idx := nibbles[0]
-		fmt.Printf("has方法：处理索引 %d，剩余nibbles长度 %d\n", idx, len(nibbles)-1)
-		if idx >= 16 {
-			fmt.Printf("has方法：无效的nibble值 %d\n", idx)
-			return nil, fmt.Errorf("invalid nibble value: %d", idx)
-		}
-		child, err := mpt.Loadnode(n.Child[idx])
-		fmt.Println(n.Child[idx])
-		if err != nil {
-			fmt.Println("has方法：加载子节点失败")
-			return nil, fmt.Errorf("key not found6")
-		}
-		if child == nil {
-			fmt.Println("has方法：子节点为空")
-			return nil, fmt.Errorf("key not found7")
-		}
-		fmt.Println("has方法：递归查找子节点")
-		return mpt.has(child, nibbles[1:])
-
-	default:
-		return nil, fmt.Errorf("unknown node type")
-	}
+    default:
+        return nil, fmt.Errorf("unknown node type")
+    }
 }
