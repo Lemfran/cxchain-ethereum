@@ -69,19 +69,19 @@ func TestBlockMaker_Pack(t *testing.T) {
 	tx.Sign(account1.PrivateKey)
 	maker.Statedb.Store(account1.Address, account1.Account)
 	maker.Statedb.Store(account2.Address, account2.Account)
-	fmt.Printf("-------------------1------------------------")
+	fmt.Println("---------------------------放入交易------------------------------")
 	txPool.NewTX(tx)
-	fmt.Printf("--------------------------------------------")
+	fmt.Println("----------------------------开始打包----------------------------------")
 
 	// 测试Pack方法
 	maker.NewBlock()
 	go maker.Pack()
 	
-	fmt.Println("-------------------234-------------------------")
+	
 	// 等待打包完成
 	time.Sleep(1 * time.Second)
 	maker.Interupt()
-
+	fmt.Println("--------------------------打包完成---------------------------")
 	
 	if len(maker.NextBody.Transactions) == 0 {
 		t.Error("Should pack at least one transaction")
@@ -102,24 +102,32 @@ func TestBlockMaker_PackBlock(t *testing.T) {
 
 
 	// 添加测试交易
+	//生成账户并存入状态树
 	account1, _ := common.GenerateAccount(100000000)
 	account2, _ := common.GenerateAccount(100000000)
 	tx := common.NewTransaction(account2.Address[:], 100, 1, 100000, 100000, []byte(""))
 	tx2 := common.NewTransaction(account2.Address[:], 100, 2, 100000, 120000, []byte(""))
+	tx3 := common.NewTransaction(account2.Address[:], 100, 3, 100000, 130000, []byte(""))
 	tx.Sign(account1.PrivateKey)
 	tx2.Sign(account1.PrivateKey)
+	tx3.Sign(account1.PrivateKey)
+
 
 	maker.Statedb.Store(account1.Address, account1.Account)
 	maker.Statedb.Store(account2.Address, account2.Account)
-	fmt.Printf("-------------------1------------------------")
+	fmt.Println("---------------------------放入交易------------------------------")
+	//添加交易
 	txPool.NewTX(tx)
 	txPool.NewTX(tx2)
-	fmt.Println("------------------------------------------------------------------------")
+	fmt.Println("----------------------------开始打包----------------------------------")
 
 	// 测试PackBlock方法
+	//第一次打包
 	maker.PackBlock()
 
-	txPool.NewTX(tx2)
+	//添加交易3
+	txPool.NewTX(tx3)
 
+	//第二次打包
 	maker.PackBlock()
 }
