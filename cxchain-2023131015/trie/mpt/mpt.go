@@ -201,15 +201,15 @@ func (mpt *MPT) insert(node Node, nibbles, value []byte) (Node, error) {
 
 			if len(nibbles[len(Prefix):]) > 0 {
 				idx := nibbles[len(Prefix)]
-				ex := &ExtensionNode{
-					NodeType: ExtensionNodeType,
+				LeafNode := &LeafNode{
+					NodeType: LeafNodeType,
 					Key:      nibbles[len(Prefix)+1:],
 					Value:    value,
 				}
-				if err := mpt.Savenode(ex); err != nil {
+				if err := mpt.Savenode(LeafNode); err != nil {
 					return nil, err
 				}
-				branch.Child[idx] = ex.GetHash()
+				branch.Child[idx] = LeafNode.GetHash()
 			}
 
 			if len(Prefix) > 0 {
